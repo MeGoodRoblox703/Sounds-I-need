@@ -59601,6 +59601,37 @@ end
 return v117.Skins[arg] or {}
 end
 
+-- Custom skins are inserted into the native per-weapon Skin Catalog.
+local CUSTOM_SKIN_PREFIX = "[CUSTOM] "
+local customSelectedByWeapon = {}
+local function getCustomSkinStore()
+local env = (getgenv and getgenv()) or _G
+return env.KiciaCustomWeaponSkins or {}
+end
+local function customSkinNameFromEntry(name)
+if type(name) == "string" and name:sub(1, #CUSTOM_SKIN_PREFIX) == CUSTOM_SKIN_PREFIX then
+return name:sub(#CUSTOM_SKIN_PREFIX + 1)
+end
+return nil
+end
+local function appendCustomSkinsForWeapon(names, weaponName)
+if weaponName == "All" then return names end
+local store = getCustomSkinStore()
+local wanted = string.lower(tostring(weaponName or ""))
+for skinName, data in pairs(store) do
+if type(data) == "table" then
+local assigned = string.lower(tostring(data.Weapon or ""))
+if assigned == "" or assigned == wanted or (wanted == "assault rifle" and (assigned == "ar" or assigned == "assaultrifle")) then
+local entryName = CUSTOM_SKIN_PREFIX .. tostring(skinName)
+table.insert(names, entryName)
+v117.Images[entryName] = data.Image or "rbxassetid://89204837120267"
+end
+end
+end
+table.sort(names)
+return names
+end
+
 local cFrame = CFrame.Angles(0, 3.4906585039886591, 0) * CFrame.Angles(-0.26179938779914941, 0, 0) * CFrame.new(v86[186], 0, 1)
 
 local function fn43(arg, arg2)
@@ -59942,6 +59973,11 @@ v137:Set(false, v86[34])
 return
 end
 
+if customSelectedByWeapon[str7] then
+v135:Set(customSelectedByWeapon[str7], true)
+return
+end
+
 local skinChangerSelections = arg.Cosmetics:GetSkinChangerSelections(str7)
 
 if skinChangerSelections == nil then
@@ -59974,7 +60010,7 @@ local flag22 = false
 
 arg2.Skins:OnFirstOpen(function()
 v135:SetState("Loading")
-tbl22 = fn42(str7)
+tbl22 = appendCustomSkinsForWeapon(fn42(str7), str7)
 v135:SetItems(fn41(tbl22))
 flag22 = true
 fn50(v135, v134.Value, tbl22, str7 == "All")
@@ -60085,15 +60121,32 @@ end)
 fn48 = function()
 if flag22 then
 v135:SetState("Loading")
-tbl22 = fn42(str7)
+tbl22 = appendCustomSkinsForWeapon(fn42(str7), str7)
 v135:SetItems(fn41(tbl22), true)
 fn50(v135, v134.Value, tbl22, str7 == "All")
 end
 
 fn52()
 end
+local customEnv = (getgenv and getgenv()) or _G
+customEnv.KiciaCustomSkinRefresh = fn48
 
 v135:OnChanged(function(arg3)
+local customName = customSkinNameFromEntry(arg3)
+if customName then
+customSelectedByWeapon[str7] = arg3
+local env = (getgenv and getgenv()) or _G
+local creator = env.KiciaCustomWeaponCreator
+if creator and creator.Apply then
+local matched = creator.Apply(customName)
+if matched == 0 then
+warn("[Kicia] Custom skin selected, but no matching weapon viewmodel was found. Check the Weapon Filter in Custom Creator.")
+end
+end
+return
+elseif arg3 ~= nil then
+customSelectedByWeapon[str7] = nil
+end
 if str7 == "All" then
 if arg3 == nil or not tbl19[arg3] then
 return
@@ -67177,7 +67230,14 @@ do
             local filter = string.lower(tostring(data.Weapon or ""))
             local item = model:FindFirstChild("ItemVisual", true)
             local searchable = string.lower(model.Name .. " " .. (item and item.Name or ""))
-            if filter == "" or searchable:find(filter,1,true) then
+            local matchesWeapon = filter == "" or searchable:find(filter,1,true) ~= nil
+            if filter == "assault rifle" or filter == "assaultrifle" or filter == "ar" then
+                matchesWeapon = matchesWeapon or searchable:find("arviewmodel",1,true) ~= nil or searchable:find("assault rifle",1,true) ~= nil
+            end
+            if filter == "handgun" or filter == "pistol" then
+                matchesWeapon = matchesWeapon or searchable:find("handgun",1,true) ~= nil
+            end
+            if matchesWeapon then
                 local root = item or model
                 for _, obj in ipairs(root:GetDescendants()) do
                     if obj:IsA("BasePart") and not isArm(obj) then
@@ -67279,6 +67339,7 @@ do
             end
             local function refresh()
                 if saved and saved.SetItems then pcall(function() saved:SetItems(service.List(), true) end) end
+                if type(ENV.KiciaCustomSkinRefresh) == "function" then pcall(ENV.KiciaCustomSkinRefresh) end
             end
             left:AddButton({Label="Create / Update Custom Skin", OnClick=function()
                 local data = form(); local ok, message = service.Save(data); setStatus(message); refresh()
