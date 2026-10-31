@@ -67138,7 +67138,7 @@ end)
 -- All controls are built with Kicia's own tab/section API; no floating ScreenGui.
 do
     local ENV = (getgenv and getgenv()) or _G
-    local CREATOR_VERSION = "2.2.0"
+    local CREATOR_VERSION = "2.3.0"
     print("[Kicia Custom Skins] Version " .. CREATOR_VERSION .. " loaded")
     print("[Kicia Custom Skins] Integration target: Cosmetics > Skins > Apply To > selected weapon > Skin Catalog")
     local HttpService = game:GetService("HttpService")
@@ -67395,6 +67395,200 @@ do
             end})
             refresh()
         end
+    end
+end
+
+-- RIVALS native weapon-skin selector bridge (local client only).
+-- Detects the in-game skin browser by its search field, clones a native skin
+-- tile, and appends custom entries. Selecting a tile applies the saved skin.
+do
+    local ENV = (getgenv and getgenv()) or _G
+    local BRIDGE_VERSION = "2.3.0"
+    local Players = game:GetService("Players")
+    local RunService = game:GetService("RunService")
+    local LocalPlayer = Players.LocalPlayer
+    local PREFIX = "[Kicia RIVALS Selector] "
+    print(PREFIX .. "Version " .. BRIDGE_VERSION .. " loaded; waiting for the native skin browser")
+
+    local function getService()
+        return ENV.KiciaCustomWeaponCreator
+    end
+    local function textOf(obj)
+        if obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox") then
+            return tostring(obj.Text or "")
+        end
+        return ""
+    end
+    local function isSearchBox(obj)
+        if not obj:IsA("TextBox") then return false end
+        local placeholder = string.lower(tostring(obj.PlaceholderText or ""))
+        local txt = string.lower(tostring(obj.Text or ""))
+        return placeholder:find("search", 1, true) ~= nil
+            or (txt:find("search by name", 1, true) ~= nil)
+    end
+    local function collectButtons(container)
+        local found = {}
+        for _, d in ipairs(container:GetDescendants()) do
+            if d:IsA("GuiButton") and not d:GetAttribute("KiciaCustomSkinTile") then
+                table.insert(found, d)
+            end
+        end
+        return found
+    end
+    local function findNativeList()
+        local pg = LocalPlayer and LocalPlayer:FindFirstChildOfClass("PlayerGui")
+        if not pg then return nil end
+        for _, obj in ipairs(pg:GetDescendants()) do
+            if isSearchBox(obj) then
+                local ancestor = obj.Parent
+                for depth = 1, 8 do
+                    if not ancestor then break end
+                    local candidates = {}
+                    for _, d in ipairs(ancestor:GetDescendants()) do
+                        if d:IsA("ScrollingFrame") then
+                            local buttons = collectButtons(d)
+                            if #buttons >= 2 then
+                                table.insert(candidates, {frame=d, buttons=buttons, count=#buttons})
+                            end
+                        end
+                    end
+                    table.sort(candidates, function(a,b) return a.count > b.count end)
+                    if candidates[1] then
+                        return candidates[1].frame, candidates[1].buttons, obj
+                    end
+                    ancestor = ancestor.Parent
+                end
+            end
+        end
+        return nil
+    end
+    local function findTextLabels(button)
+        local labels = {}
+        for _, d in ipairs(button:GetDescendants()) do
+            if d:IsA("TextLabel") or d:IsA("TextButton") then
+                table.insert(labels, d)
+            end
+        end
+        return labels
+    end
+    local function setTileText(tile, skinName, weaponName)
+        local labels = findTextLabels(tile)
+        if #labels == 0 then
+            local label = Instance.new("TextLabel")
+            label.Name = "KiciaCustomSkinName"
+            label.BackgroundTransparency = 1
+            label.Size = UDim2.new(1, -4, 0, 24)
+            label.Position = UDim2.new(0, 2, 1, -25)
+            label.TextScaled = true
+            label.TextColor3 = Color3.new(1,1,1)
+            label.TextStrokeTransparency = 0.25
+            label.Text = skinName
+            label.Parent = tile
+        else
+            -- Keep only the first title-like label's layout; clear other copied labels.
+            labels[1].Text = skinName
+            for i = 2, #labels do labels[i].Text = "" end
+        end
+        tile.Name = "KiciaCustomSkin_" .. tostring(skinName):gsub("[^%w_%-]", "_")
+        tile:SetAttribute("KiciaCustomSkinTile", true)
+        tile:SetAttribute("KiciaCustomSkinName", skinName)
+        tile:SetAttribute("KiciaCustomWeapon", weaponName or "")
+    end
+    local function setTileImage(tile, data)
+        if not data.Image then return end
+        local set = false
+        for _, d in ipairs(tile:GetDescendants()) do
+            if d:IsA("ImageLabel") or d:IsA("ImageButton") then
+                if not set then
+                    d.Image = data.Image
+                    set = true
+                end
+            end
+        end
+    end
+    local function currentWeaponHint(searchBox, list)
+        -- RIVALS' browser header may identify the selected weapon or category.
+        local root = list
+        for _ = 1, 7 do if root.Parent then root = root.Parent end end
+        local words = {}
+        for _, d in ipairs(root:GetDescendants()) do
+            local t = textOf(d)
+            if t ~= "" and #t < 45 then table.insert(words, t) end
+        end
+        return table.concat(words, " ")
+    end
+    local function matchesWeapon(data, hint)
+        local wanted = string.lower(tostring(data.Weapon or "")):gsub("[^%w]", "")
+        if wanted == "" or wanted == "allweapons" then return true end
+        local hay = string.lower(hint or ""):gsub("[^%w]", "")
+        if wanted == "ar" or wanted == "assaultrifle" then
+            return hay:find("assaultrifle",1,true) or hay:find("ak47",1,true) or hay:find("ar",1,true)
+        end
+        if wanted == "sniper" then return hay:find("sniper",1,true) or hay:find("rifle",1,true) end
+        return hay:find(wanted, 1, true) ~= nil
+    end
+    local function addCustomTiles()
+        local service = getService()
+        if not service or type(service.List) ~= "function" then return end
+        local list, buttons, searchBox = findNativeList()
+        if not list or not buttons or #buttons == 0 then return end
+        if not list:GetAttribute("KiciaNativeSkinListDetected") then
+            list:SetAttribute("KiciaNativeSkinListDetected", true)
+            print(PREFIX .. "Detected RIVALS skin list | native tile templates: " .. tostring(#buttons))
+        end
+        local hint = currentWeaponHint(searchBox, list)
+        print(PREFIX .. "Skin browser opened; matching saved skins against current selector context")
+        local added = 0
+        for _, name in ipairs(service.List()) do
+            local savedSkins = ENV.KiciaCustomWeaponSkins or {}
+            local data = savedSkins[name]
+            -- Read the saved record directly; do not change the creator's active selection while listing.
+            if data and matchesWeapon(data, hint) then
+                local existing = list:FindFirstChild("KiciaCustomSkin_" .. tostring(name):gsub("[^%w_%-]", "_"))
+                if not existing then
+                    local template = buttons[1]
+                    local tile
+                    local ok = pcall(function() tile = template:Clone() end)
+                    if ok and tile then
+                        tile.Visible = true
+                        tile.LayoutOrder = 100000 + added
+                        setTileText(tile, tostring(name), tostring(data.Weapon or ""))
+                        setTileImage(tile, data)
+                        tile.Parent = list
+                        if tile:IsA("GuiButton") then
+                            tile.Activated:Connect(function()
+                                local current = getService()
+                                if current and current.Apply then
+                                    local count = current.Apply(name)
+                                    print(PREFIX .. "SELECTED | Skin: " .. tostring(name) .. " | Weapon: " .. tostring(data.Weapon or "All Weapons") .. " | Applied viewmodels: " .. tostring(count))
+                                end
+                            end)
+                        end
+                        added += 1
+                        print(PREFIX .. "ADDED TO RIVALS SELECTOR | Skin: " .. tostring(name) .. " | Weapon: " .. tostring(data.Weapon or "All Weapons"))
+                    else
+                        print(PREFIX .. "Could not clone a native skin tile for: " .. tostring(name))
+                    end
+                end
+            end
+        end
+        if added > 0 then print(PREFIX .. "Inserted " .. tostring(added) .. " custom skin tile(s) into the detected RIVALS skin list") end
+    end
+
+    local scanElapsed = 0
+    local lastScan = 0
+    local connection = RunService.RenderStepped:Connect(function(dt)
+        scanElapsed += dt
+        if scanElapsed < 1 then return end
+        scanElapsed = 0
+        local service = getService()
+        if service and #service.List() > 0 then
+            local ok, err = pcall(addCustomTiles)
+            if not ok then warn(PREFIX .. "scan error: " .. tostring(err)) end
+        end
+    end)
+    if ENV.K and ENV.K.cleanups then
+        table.insert(ENV.K.cleanups, function() if connection then connection:Disconnect() end end)
     end
 end
 
