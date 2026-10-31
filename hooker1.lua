@@ -67403,7 +67403,7 @@ end
 -- tile, and appends custom entries. Selecting a tile applies the saved skin.
 do
     local ENV = (getgenv and getgenv()) or _G
-    local BRIDGE_VERSION = "2.3.0"
+    local BRIDGE_VERSION = "2.4.0"
     local Players = game:GetService("Players")
     local RunService = game:GetService("RunService")
     local LocalPlayer = Players.LocalPlayer
@@ -67477,9 +67477,11 @@ do
             local label = Instance.new("TextLabel")
             label.Name = "KiciaCustomSkinName"
             label.BackgroundTransparency = 1
-            label.Size = UDim2.new(1, -4, 0, 24)
-            label.Position = UDim2.new(0, 2, 1, -25)
+            label.Size = UDim2.new(1, -4, 0, 22)
+            label.Position = UDim2.new(0, 2, 1, -23)
             label.TextScaled = true
+            label.TextWrapped = false
+            label.ClipsDescendants = true
             label.TextColor3 = Color3.new(1,1,1)
             label.TextStrokeTransparency = 0.25
             label.Text = skinName
@@ -67496,14 +67498,23 @@ do
     end
     local function setTileImage(tile, data)
         if not data.Image then return end
-        local set = false
+        -- Change only the main artwork image, not tiny badges/icons. Keep its
+        -- original card-relative geometry so the asset can never render as a
+        -- full-screen/oversized image.
+        local best, bestArea = nil, -1
         for _, d in ipairs(tile:GetDescendants()) do
             if d:IsA("ImageLabel") or d:IsA("ImageButton") then
-                if not set then
-                    d.Image = data.Image
-                    set = true
-                end
+                local size = d.AbsoluteSize
+                local area = size.X * size.Y
+                if area > bestArea then best, bestArea = d, area end
             end
+        end
+        if best then
+            best.Image = data.Image
+            best.ScaleType = Enum.ScaleType.Fit
+            best.ImageRectOffset = Vector2.zero
+            best.ImageRectSize = Vector2.zero
+            best.ClipsDescendants = true
         end
     end
     local function currentWeaponHint(searchBox, list)
@@ -67551,10 +67562,24 @@ do
                     local ok = pcall(function() tile = template:Clone() end)
                     if ok and tile then
                         tile.Visible = true
-                        tile.LayoutOrder = 100000 + added
+                        -- Clone beside the source card, not directly under the
+                        -- ScrollingFrame. The source's immediate parent owns the
+                        -- native UIGridLayout/UIListLayout and card sizing.
+                        tile.Size = template.Size
+                        tile.AutomaticSize = Enum.AutomaticSize.None
+                        tile.AnchorPoint = template.AnchorPoint
+                        tile.Rotation = template.Rotation
+                        local layoutParent = template.Parent or list
+                        local maxOrder = 0
+                        for _, sibling in ipairs(layoutParent:GetChildren()) do
+                            if sibling:IsA("GuiObject") then
+                                maxOrder = math.max(maxOrder, sibling.LayoutOrder)
+                            end
+                        end
+                        tile.LayoutOrder = maxOrder + 1 + added
                         setTileText(tile, tostring(name), tostring(data.Weapon or ""))
                         setTileImage(tile, data)
-                        tile.Parent = list
+                        tile.Parent = layoutParent
                         if tile:IsA("GuiButton") then
                             tile.Activated:Connect(function()
                                 local current = getService()
