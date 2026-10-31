@@ -60206,7 +60206,7 @@ return io.c
 end
 end
 do -- ip
-local function fn35() tbl17 .aE(); tbl17 .hN();local I,W,N,P= tbl17 .il(), tbl17 .im(), tbl17 .io(),{Overview="rbxassetid://89644754139307",Skins="rbxassetid://97652569554326",Wraps="rbxassetid://76631821212930",Charms="rbxassetid://125353572203968",Finishers="rbxassetid://82039875682356",Presets="rbxassetid://119633739754015"};return function(l,a)local e=a:AddTab({Label="Cosmetics",Icon="rbxassetid://128162112866809",Description="Manage cosmetic runtime, catalogs, and cosmetic presets."});N(l,(e:AddTab({Label="Presets",Icon=P.Presets,Description="Create, load, automate, and delete whole cosmetic loadouts."}):Grid({Columns=2})));W(l,e:AddTab({Label="Overview",Icon=P.Overview,Description="Enable cosmetic features, unlock cosmetics, reroll, and share your active look."}):Grid({Columns=2}),(I(l,{Skins=e:AddTab({Label="Skins",Icon=P.Skins,Description="Browse and apply weapon skin variants."}),Wraps=e:AddTab({Label="Wraps",Icon=P.Wraps,Description="Browse weapon wraps and control inverted patterns."}),Charms=e:AddTab({Label="Charms",Icon=P.Charms,Description="Browse weapon charms and optionally override rank charms."}),Finishers=e:AddTab({Label="Finishers",Icon=P.Finishers,Description="Browse and apply weapon finishers."})})));end;end
+local function fn35() tbl17 .aE(); tbl17 .hN();local I,W,N,P= tbl17 .il(), tbl17 .im(), tbl17 .io(),{Overview="rbxassetid://89644754139307",Skins="rbxassetid://97652569554326",Wraps="rbxassetid://76631821212930",Charms="rbxassetid://125353572203968",Finishers="rbxassetid://82039875682356",Presets="rbxassetid://119633739754015"};return function(l,a)local e=a:AddTab({Label="Cosmetics",Icon="rbxassetid://128162112866809",Description="Manage cosmetic runtime, catalogs, custom weapon skins, and presets."});N(l,(e:AddTab({Label="Presets",Icon=P.Presets,Description="Create, load, automate, and delete whole cosmetic loadouts."}):Grid({Columns=2})));W(l,e:AddTab({Label="Overview",Icon=P.Overview,Description="Enable cosmetic features, unlock cosmetics, reroll, and share your active look."}):Grid({Columns=2}),(I(l,{Skins=e:AddTab({Label="Skins",Icon=P.Skins,Description="Browse and apply weapon skin variants."}),Wraps=e:AddTab({Label="Wraps",Icon=P.Wraps,Description="Browse weapon wraps and control inverted patterns."}),Charms=e:AddTab({Label="Charms",Icon=P.Charms,Description="Browse weapon charms and optionally override rank charms."}),Finishers=e:AddTab({Label="Finishers",Icon=P.Finishers,Description="Browse and apply weapon finishers."})})));local custom=e:AddTab({Label="Custom Creator",Description="Create local weapon skins, effects, and weapon animation overrides."});tbl17.ic()(l,custom:Grid({Columns=2}));end;end
 
 tbl17.ip = function()
 local ip = tbl17.cache.ip
@@ -67059,494 +67059,247 @@ end
 end)
 end)
 
---[[
-KICIA CUSTOM WEAPON SKIN / EFFECT / ANIMATION CREATOR
-Local-only viewmodel customization. This does not add cosmetics to the
-RIVALS server catalog and other players will not see these changes.
-]]
-task.spawn(function()
-    local Players = game:GetService("Players")
-    local RunService = game:GetService("RunService")
-    local HttpService = game:GetService("HttpService")
-    local CoreGui = game:GetService("CoreGui")
-    local player = Players.LocalPlayer
-    while not player do task.wait(0.25); player = Players.LocalPlayer end
-
+-- Kicia-native Custom Weapon Creator integration.
+-- All controls are built with Kicia's own tab/section API; no floating ScreenGui.
+do
     local ENV = (getgenv and getgenv()) or _G
+    local HttpService = game:GetService("HttpService")
+    local RunService = game:GetService("RunService")
     local STORE_KEY = "KiciaCustomWeaponSkins"
     local FILE_NAME = "KiciaCustomWeaponSkins.json"
     local skins = ENV[STORE_KEY] or {}
     ENV[STORE_KEY] = skins
 
-    local function loadSaved()
-        if type(readfile) == "function" and type(isfile) == "function" then
-            local ok, data = pcall(function()
-                if isfile(FILE_NAME) then return HttpService:JSONDecode(readfile(FILE_NAME)) end
-            end)
-            if ok and type(data) == "table" then skins = data; ENV[STORE_KEY] = skins end
-        end
-    end
-    local function saveAll()
-        ENV[STORE_KEY] = skins
-        if type(writefile) == "function" then
-            pcall(function()
-                local serializable = {}
-                for name, data in pairs(skins) do
-                    local copy = {}
-                    for key, value in pairs(data) do
-                        if typeof(value) ~= "Color3" then copy[key] = value end
-                    end
-                    serializable[name] = copy
-                end
-                writefile(FILE_NAME, HttpService:JSONEncode(serializable))
-            end)
-        end
-    end
-    loadSaved()
-
-    local oldGui = nil
-    pcall(function()
-        local parent = (gethui and gethui()) or CoreGui
-        oldGui = parent:FindFirstChild("KiciaCustomWeaponCreator")
-        if oldGui then oldGui:Destroy() end
-    end)
-
-    local gui = Instance.new("ScreenGui")
-    gui.Name = "KiciaCustomWeaponCreator"
-    gui.ResetOnSpawn = false
-    gui.IgnoreGuiInset = true
-    gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    local guiParent = CoreGui
-    pcall(function() if gethui then guiParent = gethui() end end)
-    if not guiParent then guiParent = player:WaitForChild("PlayerGui") end
-    gui.Parent = guiParent
-
-    local main = Instance.new("Frame")
-    main.Name = "Main"
-    main.Size = UDim2.fromOffset(390, 570)
-    main.Position = UDim2.new(0, 24, 0.5, -285)
-    main.BackgroundColor3 = Color3.fromRGB(20, 21, 26)
-    main.BorderSizePixel = 0
-    main.Parent = gui
-    Instance.new("UICorner", main).CornerRadius = UDim.new(0, 9)
-    local stroke = Instance.new("UIStroke", main)
-    stroke.Color = Color3.fromRGB(105, 75, 170)
-    stroke.Thickness = 1.3
-
-    local top = Instance.new("Frame")
-    top.Size = UDim2.new(1, 0, 0, 38)
-    top.BackgroundColor3 = Color3.fromRGB(35, 29, 49)
-    top.BorderSizePixel = 0
-    top.Parent = main
-    Instance.new("UICorner", top).CornerRadius = UDim.new(0, 9)
-    local title = Instance.new("TextLabel")
-    title.BackgroundTransparency = 1
-    title.Position = UDim2.fromOffset(12, 0)
-    title.Size = UDim2.new(1, -55, 1, 0)
-    title.Font = Enum.Font.GothamBold
-    title.Text = "CUSTOM WEAPON CREATOR"
-    title.TextColor3 = Color3.fromRGB(245, 240, 255)
-    title.TextSize = 13
-    title.TextXAlignment = Enum.TextXAlignment.Left
-    title.Parent = top
-    local close = Instance.new("TextButton")
-    close.Size = UDim2.fromOffset(32, 28)
-    close.Position = UDim2.new(1, -36, 0, 5)
-    close.BackgroundColor3 = Color3.fromRGB(95, 48, 62)
-    close.Text = "X"
-    close.Font = Enum.Font.GothamBold
-    close.TextColor3 = Color3.new(1, 1, 1)
-    close.TextSize = 13
-    close.Parent = top
-    Instance.new("UICorner", close).CornerRadius = UDim.new(0, 6)
-    close.MouseButton1Click:Connect(function() gui.Enabled = false end)
-    local UserInputService = game:GetService("UserInputService")
-    local toggleConnection = UserInputService.InputBegan:Connect(function(input, processed)
-        if not processed and input.KeyCode == Enum.KeyCode.RightShift then
-            gui.Enabled = not gui.Enabled
-        end
-    end)
-
-    local scroll = Instance.new("ScrollingFrame")
-    scroll.Position = UDim2.fromOffset(10, 46)
-    scroll.Size = UDim2.new(1, -20, 1, -56)
-    scroll.BackgroundTransparency = 1
-    scroll.BorderSizePixel = 0
-    scroll.ScrollBarThickness = 4
-    scroll.CanvasSize = UDim2.new()
-    scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-    scroll.Parent = main
-    local layout = Instance.new("UIListLayout")
-    layout.Padding = UDim.new(0, 6)
-    layout.SortOrder = Enum.SortOrder.LayoutOrder
-    layout.Parent = scroll
-    local pad = Instance.new("UIPadding")
-    pad.PaddingBottom = UDim.new(0, 8)
-    pad.Parent = scroll
-
-    local fields = {}
-    local order = 0
-    local function section(text)
-        order = order + 1
-        local label = Instance.new("TextLabel")
-        label.LayoutOrder = order
-        label.Size = UDim2.new(1, -4, 0, 24)
-        label.BackgroundColor3 = Color3.fromRGB(39, 34, 50)
-        label.BorderSizePixel = 0
-        label.Font = Enum.Font.GothamBold
-        label.Text = "  " .. text
-        label.TextColor3 = Color3.fromRGB(205, 180, 255)
-        label.TextSize = 11
-        label.TextXAlignment = Enum.TextXAlignment.Left
-        label.Parent = scroll
-        Instance.new("UICorner", label).CornerRadius = UDim.new(0, 5)
-    end
-    local function field(key, labelText, defaultText, placeholder)
-        order = order + 1
-        local holder = Instance.new("Frame")
-        holder.LayoutOrder = order
-        holder.Size = UDim2.new(1, -4, 0, 47)
-        holder.BackgroundTransparency = 1
-        holder.Parent = scroll
-        local label = Instance.new("TextLabel")
-        label.Size = UDim2.new(1, 0, 0, 16)
-        label.BackgroundTransparency = 1
-        label.Font = Enum.Font.Gotham
-        label.Text = labelText
-        label.TextColor3 = Color3.fromRGB(205, 205, 215)
-        label.TextSize = 10
-        label.TextXAlignment = Enum.TextXAlignment.Left
-        label.Parent = holder
-        local box = Instance.new("TextBox")
-        box.Position = UDim2.fromOffset(0, 18)
-        box.Size = UDim2.new(1, 0, 0, 27)
-        box.BackgroundColor3 = Color3.fromRGB(31, 32, 39)
-        box.BorderSizePixel = 0
-        box.ClearTextOnFocus = false
-        box.Font = Enum.Font.Gotham
-        box.PlaceholderText = placeholder or "Enter " .. labelText
-        box.Text = defaultText or ""
-        box.TextColor3 = Color3.fromRGB(245, 245, 250)
-        box.PlaceholderColor3 = Color3.fromRGB(120, 120, 132)
-        box.TextSize = 11
-        box.TextXAlignment = Enum.TextXAlignment.Left
-        box.Parent = holder
-        Instance.new("UICorner", box).CornerRadius = UDim.new(0, 5)
-        local p = Instance.new("UIPadding", box)
-        p.PaddingLeft = UDim.new(0, 8)
-        fields[key] = box
-        return box
-    end
-    local function actionButton(text, color)
-        order = order + 1
-        local button = Instance.new("TextButton")
-        button.LayoutOrder = order
-        button.Size = UDim2.new(1, -4, 0, 30)
-        button.BackgroundColor3 = color or Color3.fromRGB(88, 62, 135)
-        button.BorderSizePixel = 0
-        button.Font = Enum.Font.GothamBold
-        button.Text = text
-        button.TextColor3 = Color3.new(1, 1, 1)
-        button.TextSize = 11
-        button.Parent = scroll
-        Instance.new("UICorner", button).CornerRadius = UDim.new(0, 5)
-        return button
-    end
-    local status = Instance.new("TextLabel")
-    order = order + 1
-    status.LayoutOrder = order
-    status.Size = UDim2.new(1, -4, 0, 30)
-    status.BackgroundTransparency = 1
-    status.Font = Enum.Font.Gotham
-    status.Text = "Local-only creator. Saved skins are stored on this device when file APIs are available."
-    status.TextColor3 = Color3.fromRGB(165, 165, 180)
-    status.TextSize = 10
-    status.TextWrapped = true
-    status.Parent = scroll
-    local function say(message)
-        status.Text = message
-    end
-
-    section("SKIN DETAILS")
-    field("Name", "Skin Name", "My Custom Skin")
-    field("Weapon", "Weapon / Viewmodel Name Filter", "", "Example: AR, Sniper, Handgun; blank = all")
-    field("Image", "Texture / Image Asset ID", "", "Asset ID or rbxassetid://...")
-    field("Color", "Part Color (HEX)", "FFFFFF", "Example: FF33AA")
-    field("Rarity", "Rarity", "Custom", "Common / Rare / Legendary / Mythical / etc.")
-    field("Slot", "Slot / Category", "Skin", "Skin / Wrap / Special")
-    field("Glow", "Glow Effect (true/false)", "false")
-    field("GlowColor", "Glow Color (HEX)", "B58CFF")
-    field("Particles", "Particle Effect (true/false)", "false")
-    field("ParticleColor", "Particle Color (HEX)", "B58CFF")
-    section("WEAPON ANIMATIONS")
-    field("Equip", "Equip Animation ID", "")
-    field("Idle", "Idle Animation ID", "")
-    field("Shoot", "Shoot Animation ID", "")
-    field("Reload", "Reload Animation ID", "")
-    field("Inspect", "Inspect Animation ID", "")
-    field("AnimSpeed", "Animation Speed", "1", "0.1 to 3")
-
     local function cleanId(value)
         local digits = tostring(value or ""):match("%d+")
         return digits and ("rbxassetid://" .. digits) or nil
     end
-    local function colorFromHex(value, fallback)
+    local function hexColor(value, fallback)
         local hex = tostring(value or ""):gsub("#", "")
         if #hex ~= 6 or not hex:match("^%x%x%x%x%x%x$") then return fallback end
-        local r = tonumber(hex:sub(1, 2), 16)
-        local g = tonumber(hex:sub(3, 4), 16)
-        local b = tonumber(hex:sub(5, 6), 16)
-        return Color3.fromRGB(r, g, b)
+        return Color3.fromRGB(tonumber(hex:sub(1,2),16), tonumber(hex:sub(3,4),16), tonumber(hex:sub(5,6),16))
     end
-    local function readForm()
-        local a = {}
-        for k, box in pairs(fields) do a[k] = box.Text end
-        a.Name = (a.Name or ""):gsub("^%s+", ""):gsub("%s+$", "")
-        if a.Name == "" then return nil, "Enter a skin name first." end
-        a.Image = cleanId(a.Image)
-        a.Equip = cleanId(a.Equip)
-        a.Idle = cleanId(a.Idle)
-        a.Shoot = cleanId(a.Shoot)
-        a.Reload = cleanId(a.Reload)
-        a.Inspect = cleanId(a.Inspect)
-        a.Color3 = colorFromHex(a.Color, Color3.new(1, 1, 1))
-        a.GlowColor3 = colorFromHex(a.GlowColor, Color3.fromRGB(181, 140, 255))
-        a.ParticleColor3 = colorFromHex(a.ParticleColor, Color3.fromRGB(181, 140, 255))
-        a.GlowEnabled = string.lower(a.Glow or "") == "true"
-        a.ParticlesEnabled = string.lower(a.Particles or "") == "true"
-        a.AnimSpeed = math.clamp(tonumber(a.AnimSpeed) or 1, 0.1, 3)
-        return a
-    end
-    local function fillForm(data)
-        for k, box in pairs(fields) do
-            local value = data[k]
-            if k == "Image" or k == "Equip" or k == "Idle" or k == "Shoot" or k == "Reload" or k == "Inspect" then
-                value = value or ""
-            end
-            if value ~= nil and typeof(value) ~= "Color3" then box.Text = tostring(value) end
+    local function saveAll()
+        ENV[STORE_KEY] = skins
+        if type(writefile) == "function" then
+            pcall(function() writefile(FILE_NAME, HttpService:JSONEncode(skins)) end)
         end
     end
+    if type(readfile) == "function" and type(isfile) == "function" then
+        pcall(function()
+            if isfile(FILE_NAME) then
+                local decoded = HttpService:JSONDecode(readfile(FILE_NAME))
+                if type(decoded) == "table" then skins = decoded; ENV[STORE_KEY] = skins end
+            end
+        end)
+    end
 
-    local selectedName = nil
+    local activeTracks, animatorConnections = {}, {}
     local function currentModels()
         local camera = workspace.CurrentCamera
-        if not camera then return {} end
         local result = {}
-        for _, child in ipairs(camera:GetChildren()) do
-            if child:IsA("Model") then
-                local hasPart = child:FindFirstChildWhichIsA("BasePart", true) ~= nil
-                if hasPart then table.insert(result, child) end
+        if camera then
+            for _, child in ipairs(camera:GetChildren()) do
+                if child:IsA("Model") and child:FindFirstChildWhichIsA("BasePart", true) then
+                    table.insert(result, child)
+                end
             end
         end
         return result
     end
     local function isArm(part)
         local n = string.lower(part.Name)
-        return n:find("arm", 1, true) or n:find("hand", 1, true) or n:find("glove", 1, true)
+        return n:find("arm",1,true) or n:find("hand",1,true) or n:find("glove",1,true)
     end
-    local function addEffects(model, data)
+    local function applyEffects(model, data)
         local root = model:FindFirstChild("ItemVisual", true) or model
-        local highlight = root:FindFirstChild("KiciaCustomSkinGlow")
+        local glow = root:FindFirstChild("KiciaCustomSkinGlow")
         if data.GlowEnabled then
-            if not highlight then
-                highlight = Instance.new("Highlight")
-                highlight.Name = "KiciaCustomSkinGlow"
-                highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-                highlight.Parent = root
-            end
-            local glowColor = colorFromHex(data.GlowColor, Color3.fromRGB(181, 140, 255))
-            highlight.FillColor = glowColor
-            highlight.OutlineColor = glowColor
-            highlight.FillTransparency = 0.55
-            highlight.OutlineTransparency = 0.1
-            highlight.Enabled = true
-        elseif highlight then
-            highlight:Destroy()
-        end
+            if not glow then glow = Instance.new("Highlight"); glow.Name = "KiciaCustomSkinGlow"; glow.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop; glow.Parent = root end
+            local c = hexColor(data.GlowColor, Color3.fromRGB(181,140,255))
+            glow.FillColor, glow.OutlineColor = c, c
+            glow.FillTransparency, glow.OutlineTransparency, glow.Enabled = 0.55, 0.1, true
+        elseif glow then glow:Destroy() end
         local attachment = root:FindFirstChild("KiciaCustomParticleAttachment", true)
         if data.ParticlesEnabled then
             if not attachment then
-                local target = root:FindFirstChildWhichIsA("BasePart", true)
-                if target then
-                    attachment = Instance.new("Attachment")
-                    attachment.Name = "KiciaCustomParticleAttachment"
-                    attachment.Parent = target
-                end
+                local part = root:FindFirstChildWhichIsA("BasePart", true)
+                if part then attachment = Instance.new("Attachment"); attachment.Name = "KiciaCustomParticleAttachment"; attachment.Parent = part end
             end
             if attachment then
                 local emitter = attachment:FindFirstChild("KiciaCustomParticles")
                 if not emitter then
-                    emitter = Instance.new("ParticleEmitter")
-                    emitter.Name = "KiciaCustomParticles"
-                    emitter.Rate = 8
-                    emitter.Lifetime = NumberRange.new(0.35, 0.8)
-                    emitter.Speed = NumberRange.new(0.2, 1.2)
-                    emitter.SpreadAngle = Vector2.new(180, 180)
-                    emitter.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.08), NumberSequenceKeypoint.new(1, 0)})
+                    emitter = Instance.new("ParticleEmitter"); emitter.Name = "KiciaCustomParticles"
+                    emitter.Rate = 8; emitter.Lifetime = NumberRange.new(0.35,0.8); emitter.Speed = NumberRange.new(0.2,1.2)
+                    emitter.SpreadAngle = Vector2.new(180,180)
+                    emitter.Size = NumberSequence.new({NumberSequenceKeypoint.new(0,0.08),NumberSequenceKeypoint.new(1,0)})
                     emitter.Parent = attachment
                 end
-                emitter.Color = ColorSequence.new(colorFromHex(data.ParticleColor, Color3.fromRGB(181, 140, 255)))
+                emitter.Color = ColorSequence.new(hexColor(data.ParticleColor, Color3.fromRGB(181,140,255)))
                 emitter.Enabled = true
             end
-        elseif attachment then
-            attachment:Destroy()
-        end
+        elseif attachment then attachment:Destroy() end
     end
-    local function applySkin(data)
-        local models = currentModels()
-        local matched = 0
-        for _, model in ipairs(models) do
-            local filter = string.lower(tostring(data.Weapon or ""))
-            local modelName = string.lower(model.Name)
-            local itemVisual = model:FindFirstChild("ItemVisual", true)
-            local searchable = modelName .. " " .. (itemVisual and string.lower(itemVisual.Name) or "")
-            if filter == "" or searchable:find(filter, 1, true) then
-                local root = itemVisual or model
-                for _, obj in ipairs(root:GetDescendants()) do
-                    if obj:IsA("BasePart") and not isArm(obj) then
-                        pcall(function() obj.Color = colorFromHex(data.Color, Color3.new(1, 1, 1)) end)
-                        if data.Image then
-                            if obj:IsA("MeshPart") then pcall(function() obj.TextureID = data.Image end) end
-                            for _, texture in ipairs(obj:GetChildren()) do
-                                if texture:IsA("SpecialMesh") then pcall(function() texture.TextureId = data.Image end) end
-                            end
-                        end
-                    elseif data.Image and (obj:IsA("Decal") or obj:IsA("Texture")) then
-                        pcall(function() obj.Texture = data.Image end)
-                    end
-                end
-                addEffects(model, data)
-                matched = matched + 1
-            end
-        end
-        return matched
-    end
-
-    local activeAnimationTracks = {}
-    local animationConnections = {}
     local function actionFromTrack(track)
         local anim = track.Animation
         local name = string.lower((anim and anim.Name) or track.Name or "")
-        if name:find("inspect", 1, true) then return "Inspect" end
-        if name:find("reload", 1, true) then return "Reload" end
-        if name:find("shoot", 1, true) or name:find("fire", 1, true) or name:find("quickshot", 1, true) then return "Shoot" end
-        if name:find("equip", 1, true) or name:find("draw", 1, true) then return "Equip" end
-        if name:find("idle", 1, true) then return "Idle" end
-        return nil
+        if name:find("inspect",1,true) then return "Inspect" end
+        if name:find("reload",1,true) then return "Reload" end
+        if name:find("shoot",1,true) or name:find("fire",1,true) or name:find("quickshot",1,true) then return "Shoot" end
+        if name:find("equip",1,true) or name:find("draw",1,true) then return "Equip" end
+        if name:find("idle",1,true) then return "Idle" end
     end
-    local function bindCustomAnimations(model, data)
+    local function bindAnimations(model, data)
         for _, obj in ipairs(model:GetDescendants()) do
-            local animator = (obj:IsA("Animator") and obj) or nil
-            if animator and not animationConnections[animator] then
-                animationConnections[animator] = animator.AnimationPlayed:Connect(function(originalTrack)
-                    if activeAnimationTracks[animator] == originalTrack then return end
-                    local action = actionFromTrack(originalTrack)
-                    local animationId = action and data[action]
-                    if not animationId then return end
+            if obj:IsA("Animator") and not animatorConnections[obj] then
+                animatorConnections[obj] = obj.AnimationPlayed:Connect(function(original)
+                    if activeTracks[obj] == original then return end
+                    local action = actionFromTrack(original)
+                    local id = action and data[action]
+                    if not id then return end
                     task.defer(function()
-                        if not animator.Parent then return end
-                        local animation = Instance.new("Animation")
-                        animation.AnimationId = animationId
-                        local ok, customTrack = pcall(function() return animator:LoadAnimation(animation) end)
-                        animation:Destroy()
-                        if not ok or not customTrack then return end
-                        customTrack.Priority = originalTrack.Priority
-                        customTrack.Looped = action == "Idle"
-                        originalTrack:Stop(0.06)
-                        local previous = activeAnimationTracks[animator]
-                        if previous then pcall(function() previous:Stop(0.05); previous:Destroy() end) end
-                        activeAnimationTracks[animator] = customTrack
-                        customTrack:Play(0.06)
-                        customTrack:AdjustSpeed(data.AnimSpeed or 1)
+                        if not obj.Parent then return end
+                        local animation = Instance.new("Animation"); animation.AnimationId = id
+                        local ok, track = pcall(function() return obj:LoadAnimation(animation) end); animation:Destroy()
+                        if not ok or not track then return end
+                        track.Priority = original.Priority; track.Looped = action == "Idle"
+                        original:Stop(0.06)
+                        if activeTracks[obj] then pcall(function() activeTracks[obj]:Stop(0.05); activeTracks[obj]:Destroy() end) end
+                        activeTracks[obj] = track; track:Play(0.06); track:AdjustSpeed(tonumber(data.AnimSpeed) or 1)
                     end)
                 end)
             end
         end
     end
-
-    local function applySelected()
-        local data = selectedName and skins[selectedName]
-        if not data then say("Select or save a custom skin first."); return end
-        local count = applySkin(data)
+    local function apply(data)
+        local matched = 0
         for _, model in ipairs(currentModels()) do
             local filter = string.lower(tostring(data.Weapon or ""))
-            if filter == "" or string.lower(model.Name):find(filter, 1, true) then
-                bindCustomAnimations(model, data)
+            local item = model:FindFirstChild("ItemVisual", true)
+            local searchable = string.lower(model.Name .. " " .. (item and item.Name or ""))
+            if filter == "" or searchable:find(filter,1,true) then
+                local root = item or model
+                for _, obj in ipairs(root:GetDescendants()) do
+                    if obj:IsA("BasePart") and not isArm(obj) then
+                        pcall(function()
+                            obj.Color = hexColor(data.Color, Color3.new(1,1,1))
+                            if data.Image then
+                                if obj:IsA("MeshPart") then obj.TextureID = data.Image end
+                                for _, child in ipairs(obj:GetChildren()) do if child:IsA("SpecialMesh") then child.TextureId = data.Image end end
+                            end
+                        end)
+                    elseif data.Image and (obj:IsA("Decal") or obj:IsA("Texture")) then pcall(function() obj.Texture = data.Image end) end
+                end
+                applyEffects(model, data); bindAnimations(model, data); matched += 1
             end
         end
-        say("Applied local skin/effects to " .. tostring(count) .. " viewmodel(s). Animation overrides are active when the game's animation names can be identified.")
+        return matched
     end
 
-    local saveButton = actionButton("CREATE / UPDATE SKIN", Color3.fromRGB(91, 65, 145))
-    saveButton.MouseButton1Click:Connect(function()
-        local data, err = readForm()
-        if not data then say(err); return end
-        skins[data.Name] = data
-        selectedName = data.Name
-        saveAll()
-        say("Saved '" .. data.Name .. "' | Rarity: " .. tostring(data.Rarity) .. " | Slot: " .. tostring(data.Slot))
-    end)
-    local applyButton = actionButton("APPLY SELECTED SKIN", Color3.fromRGB(54, 112, 91))
-    applyButton.MouseButton1Click:Connect(applySelected)
-    local loadButton = actionButton("LOAD SKIN BY NAME", Color3.fromRGB(65, 83, 125))
-    loadButton.MouseButton1Click:Connect(function()
-        local name = fields.Name.Text
-        if skins[name] then selectedName = name; fillForm(skins[name]); say("Loaded '" .. name .. "'. Press Apply to use it.")
-        else say("No saved skin named '" .. name .. "'.") end
-    end)
-    local deleteButton = actionButton("DELETE SKIN BY NAME", Color3.fromRGB(120, 57, 65))
-    deleteButton.MouseButton1Click:Connect(function()
-        local name = fields.Name.Text
-        if skins[name] then skins[name] = nil; if selectedName == name then selectedName = nil end; saveAll(); say("Deleted '" .. name .. "'.")
-        else say("No saved skin named '" .. name .. "'.") end
-    end)
-    local listButton = actionButton("LIST SAVED SKINS", Color3.fromRGB(65, 83, 125))
-    listButton.MouseButton1Click:Connect(function()
+    local selectedName
+    local service = {}
+    function service.List()
         local names = {}
-        for name, data in pairs(skins) do table.insert(names, tostring(name) .. " [" .. tostring(data.Rarity or "Custom") .. "/" .. tostring(data.Slot or "Skin") .. "]") end
+        for name in pairs(skins) do table.insert(names, name) end
         table.sort(names)
-        say(#names > 0 and table.concat(names, " | ") or "No custom skins saved yet.")
-    end)
+        return names
+    end
+    function service.Save(data)
+        if not data.Name or data.Name == "" then return false, "Enter a skin name." end
+        skins[data.Name] = data; selectedName = data.Name; saveAll()
+        return true, "Saved custom skin: " .. data.Name
+    end
+    function service.Load(name)
+        if not skins[name] then return nil end
+        selectedName = name
+        return skins[name]
+    end
+    function service.Delete(name)
+        if not skins[name] then return false end
+        skins[name] = nil; if selectedName == name then selectedName = nil end; saveAll(); return true
+    end
+    function service.Apply(name)
+        local data = skins[name or selectedName]
+        if not data then return 0 end
+        selectedName = name or selectedName
+        return apply(data)
+    end
+    ENV.KiciaCustomWeaponCreator = service
 
-    -- Drag the panel from its title bar.
-    local dragging, dragInput, dragStart, startPos = false, nil, nil, nil
-    top.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true; dragStart = input.Position; startPos = main.Position
-            input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end end)
-        end
+    -- Reapply on weapon swaps and respawns, but only for the selected custom skin.
+    local elapsed = 0
+    local renderConnection = RunService.RenderStepped:Connect(function(dt)
+        elapsed += dt
+        if elapsed < 0.65 then return end
+        elapsed = 0
+        if selectedName and skins[selectedName] then apply(skins[selectedName]) end
     end)
-    top.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
-    end)
-    game:GetService("UserInputService").InputChanged:Connect(function(input)
-        if dragging and (input == dragInput or input.UserInputType == Enum.UserInputType.MouseMovement) then
-            local delta = input.Position - dragStart
-            main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        end
-    end)
-
-    -- Reapply visuals to newly created viewmodels (weapon swaps / respawns).
-    local scanElapsed = 0
-    local renderConnection
-    renderConnection = RunService.RenderStepped:Connect(function(dt)
-        scanElapsed = scanElapsed + dt
-        if scanElapsed < 0.6 then return end
-        scanElapsed = 0
-        local data = selectedName and skins[selectedName]
-        if not data then return end
-        local models = currentModels()
-        applySkin(data)
-        for _, model in ipairs(models) do
-            local filter = string.lower(tostring(data.Weapon or ""))
-            if filter == "" or string.lower(model.Name):find(filter, 1, true) then bindCustomAnimations(model, data) end
-        end
-    end)
-    gui.Destroying:Connect(function()
-        if toggleConnection then toggleConnection:Disconnect() end
+    if K and K.cleanups then table.insert(K.cleanups, function()
         if renderConnection then renderConnection:Disconnect() end
-        for _, connection in pairs(animationConnections) do pcall(function() connection:Disconnect() end) end
-        for _, track in pairs(activeAnimationTracks) do pcall(function() track:Stop(0.1); track:Destroy() end) end
-    end)
-    print("[Kicia] Custom Weapon Creator loaded. Open the CUSTOM WEAPON CREATOR panel on the left.")
-end)
+        for _, connection in pairs(animatorConnections) do pcall(function() connection:Disconnect() end) end
+        for _, track in pairs(activeTracks) do pcall(function() track:Stop(0.1); track:Destroy() end) end
+    end) end
+
+    -- Kicia menu-native controls. Called by the Cosmetics tab composer below.
+    tbl17.ic = function()
+        return function(owner, tab)
+            local left = tab:AddSection({Title="Custom Skin", Side="left"})
+            local right = tab:AddSection({Title="Custom Effects & Animations", Side="right"})
+            local name = left:AddTextBox({Label="Skin Name"})
+            local weapon = left:AddTextBox({Label="Weapon Filter", Placeholder="AR / Sniper / Handgun; blank = all"})
+            local image = left:AddTextBox({Label="Texture / Image Asset ID"})
+            local color = left:AddTextBox({Label="Skin Color (HEX)", Default="FFFFFF"})
+            local rarity = left:AddDropdown({Label="Rarity", Options={"Custom","Common","Uncommon","Rare","Epic","Legendary","Mythical","Contraband"}})
+            local slot = left:AddDropdown({Label="Slot / Category", Options={"Skin","Wrap","Special"}})
+            local glow = left:AddToggle({Label="Enable Glow"})
+            local glowColor = left:AddTextBox({Label="Glow Color (HEX)", Default="B58CFF"})
+            local particles = right:AddToggle({Label="Enable Particles"})
+            local particleColor = right:AddTextBox({Label="Particle Color (HEX)", Default="B58CFF"})
+            local equip = right:AddTextBox({Label="Equip Animation ID"})
+            local idle = right:AddTextBox({Label="Idle Animation ID"})
+            local shoot = right:AddTextBox({Label="Shoot Animation ID"})
+            local reload = right:AddTextBox({Label="Reload Animation ID"})
+            local inspect = right:AddTextBox({Label="Inspect Animation ID"})
+            local speed = right:AddSlider({Label="Animation Speed", Min=0.1, Max=3, Step=0.05, Default=1})
+            local saved = right:AddDropdown({Label="Saved Custom Skin", Options=service.List(), Search=true, SelectFirst=false})
+            right:AddLabel({Label="Local-only cosmetics. Animation assets must be permitted to load."})
+            local function setStatus(message)
+                print("[Kicia Custom Creator] " .. tostring(message))
+            end
+            local function form()
+                return {
+                    Name=tostring(name.Value or ""):gsub("^%s+",""):gsub("%s+$",""),
+                    Weapon=tostring(weapon.Value or ""), Image=cleanId(image.Value), Color=tostring(color.Value or "FFFFFF"),
+                    Rarity=rarity.Value or "Custom", Slot=slot.Value or "Skin",
+                    GlowEnabled=glow.Value == true, GlowColor=tostring(glowColor.Value or "B58CFF"),
+                    ParticlesEnabled=particles.Value == true, ParticleColor=tostring(particleColor.Value or "B58CFF"),
+                    Equip=cleanId(equip.Value), Idle=cleanId(idle.Value), Shoot=cleanId(shoot.Value),
+                    Reload=cleanId(reload.Value), Inspect=cleanId(inspect.Value), AnimSpeed=tonumber(speed.Value) or 1
+                }
+            end
+            local function refresh()
+                if saved and saved.SetItems then pcall(function() saved:SetItems(service.List(), true) end) end
+            end
+            left:AddButton({Label="Create / Update Custom Skin", OnClick=function()
+                local data = form(); local ok, message = service.Save(data); setStatus(message); refresh()
+            end})
+            left:AddButton({Label="Apply Selected Custom Skin", OnClick=function()
+                local current = tostring(name.Value or saved.Value or "")
+                local ok, message = service.Apply(current)
+                setStatus("Applied to " .. tostring(ok) .. " matching weapon viewmodel(s).")
+            end})
+            left:AddButton({Label="Load Selected Skin Into Editor", OnClick=function()
+                local data = service.Load(saved.Value or name.Value)
+                if not data then setStatus("Choose a saved skin first."); return end
+                setStatus("Selected " .. tostring(data.Name) .. ". Use Apply Selected Custom Skin, or enter the same name to update it.")
+            end})
+            left:AddButton({Label="Delete Selected Custom Skin", Confirm=true, OnClick=function()
+                local target = saved.Value or name.Value
+                if service.Delete(target) then setStatus("Deleted " .. tostring(target) .. ".") else setStatus("Skin not found.") end
+                refresh()
+            end})
+            refresh()
+        end
+    end
+end
+
