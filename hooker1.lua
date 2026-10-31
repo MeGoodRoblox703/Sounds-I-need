@@ -59614,22 +59614,37 @@ return name:sub(#CUSTOM_SKIN_PREFIX + 1)
 end
 return nil
 end
+local function normalizeWeaponName(value)
+    local name = string.lower(tostring(value or ""))
+    name = name:gsub("[%s%p_]", "")
+    if name == "ar" or name == "assaultrifle" or name == "assault" then
+        return "assaultrifle"
+    end
+    if name == "pistol" then return "handgun" end
+    return name
+end
+
 local function appendCustomSkinsForWeapon(names, weaponName)
-if weaponName == "All" then return names end
-local store = getCustomSkinStore()
-local wanted = string.lower(tostring(weaponName or ""))
-for skinName, data in pairs(store) do
-if type(data) == "table" then
-local assigned = string.lower(tostring(data.Weapon or ""))
-if assigned == "" or assigned == wanted or (wanted == "assault rifle" and (assigned == "ar" or assigned == "assaultrifle")) then
-local entryName = CUSTOM_SKIN_PREFIX .. tostring(skinName)
-table.insert(names, entryName)
-v117.Images[entryName] = data.Image or "rbxassetid://89204837120267"
-end
-end
-end
-table.sort(names)
-return names
+    if weaponName == "All" then return names end
+    local store = getCustomSkinStore()
+    local wanted = normalizeWeaponName(weaponName)
+    local seen = {}
+    for _, existing in ipairs(names) do seen[tostring(existing)] = true end
+    for skinName, data in pairs(store) do
+        if type(data) == "table" then
+            local assigned = normalizeWeaponName(data.Weapon)
+            if assigned == "" or assigned == wanted then
+                local entryName = CUSTOM_SKIN_PREFIX .. tostring(skinName)
+                if not seen[entryName] then
+                    table.insert(names, entryName)
+                    seen[entryName] = true
+                end
+                v117.Images[entryName] = data.Image or "rbxassetid://89204837120267"
+            end
+        end
+    end
+    table.sort(names)
+    return names
 end
 
 local cFrame = CFrame.Angles(0, 3.4906585039886591, 0) * CFrame.Angles(-0.26179938779914941, 0, 0) * CFrame.new(v86[186], 0, 1)
@@ -60008,14 +60023,16 @@ end
 
 local flag22 = false
 
-arg2.Skins:OnFirstOpen(function()
-v135:SetState("Loading")
-tbl22 = appendCustomSkinsForWeapon(fn42(str7), str7)
-v135:SetItems(fn41(tbl22))
-flag22 = true
-fn50(v135, v134.Value, tbl22, str7 == "All")
-fn52()
-end)
+local function rebuildSkinCatalog()
+    v135:SetState("Loading")
+    tbl22 = appendCustomSkinsForWeapon(fn42(str7), str7)
+    v135:SetItems(fn41(tbl22), true)
+    flag22 = true
+    fn50(v135, v134.Value, tbl22, str7 == "All")
+    fn52()
+end
+
+arg2.Skins:OnFirstOpen(rebuildSkinCatalog)
 
 local flag23 = false
 local v145 = nil
@@ -60119,14 +60136,11 @@ fn52()
 end)
 
 fn48 = function()
-if flag22 then
-v135:SetState("Loading")
-tbl22 = appendCustomSkinsForWeapon(fn42(str7), str7)
-v135:SetItems(fn41(tbl22), true)
-fn50(v135, v134.Value, tbl22, str7 == "All")
-end
-
-fn52()
+    if flag22 then
+        rebuildSkinCatalog()
+    else
+        fn52()
+    end
 end
 local customEnv = (getgenv and getgenv()) or _G
 customEnv.KiciaCustomSkinRefresh = fn48
