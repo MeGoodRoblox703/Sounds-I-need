@@ -1,3 +1,4 @@
+-- KICIA CUSTOM WEAPON SKINS VERSION: 2.2.0
 if getgenv().KiciaRebuild and getgenv().KiciaRebuild.Unload then
     pcall(getgenv().KiciaRebuild.Unload)
 end
@@ -59638,6 +59639,7 @@ local function appendCustomSkinsForWeapon(names, weaponName)
                 if not seen[entryName] then
                     table.insert(names, entryName)
                     seen[entryName] = true
+                    print("[Kicia Custom Skins] ADDED TO SKIN SELECT | Gun: " .. tostring(weaponName) .. " | Skin: " .. tostring(skinName))
                 end
                 v117.Images[entryName] = data.Image or "rbxassetid://89204837120267"
             end
@@ -59880,6 +59882,9 @@ fn49(v122)
 fn49(v125)
 fn49(v128)
 fn49(v132)
+-- Custom creator is intentionally embedded in the native Skin Catalog section.
+-- Path: Cosmetics > Skins > Apply To (choose gun) > Skin Catalog.
+tbl17.customWeaponCreatorUI()(arg, v123, v123)
 local v134 = v123:AddTextBox({ Label = "Search Skins" })
 local v135 = v123:AddSkinChanger({ HeightMode = "Fill", State = "Loading" })
 local v136 = v126:AddTextBox({ Label = "Search Wraps" })
@@ -60024,8 +60029,10 @@ end
 local flag22 = false
 
 local function rebuildSkinCatalog()
+    print("[Kicia Custom Skins] Opening weapon skin list | Gun: " .. tostring(str7))
     v135:SetState("Loading")
-    tbl22 = appendCustomSkinsForWeapon(fn42(str7), str7)
+    tbl22 = appendCustomSkinsForWeapon(table.clone(fn42(str7)), str7)
+    print("[Kicia Custom Skins] Skin list ready | Gun: " .. tostring(str7) .. " | Entries: " .. tostring(#tbl22))
     v135:SetItems(fn41(tbl22), true)
     flag22 = true
     fn50(v135, v134.Value, tbl22, str7 == "All")
@@ -60148,6 +60155,7 @@ customEnv.KiciaCustomSkinRefresh = fn48
 v135:OnChanged(function(arg3)
 local customName = customSkinNameFromEntry(arg3)
 if customName then
+print("[Kicia Custom Skins] SELECTED IN NATIVE SKIN SECTION | Gun: " .. tostring(str7) .. " | Skin: " .. tostring(customName))
 customSelectedByWeapon[str7] = arg3
 local env = (getgenv and getgenv()) or _G
 local creator = env.KiciaCustomWeaponCreator
@@ -60273,7 +60281,7 @@ return io.c
 end
 end
 do -- ip
-local function fn35() tbl17 .aE(); tbl17 .hN();local I,W,N,P= tbl17 .il(), tbl17 .im(), tbl17 .io(),{Overview="rbxassetid://89644754139307",Skins="rbxassetid://97652569554326",Wraps="rbxassetid://76631821212930",Charms="rbxassetid://125353572203968",Finishers="rbxassetid://82039875682356",Presets="rbxassetid://119633739754015"};return function(l,a)local e=a:AddTab({Label="Cosmetics",Icon="rbxassetid://128162112866809",Description="Manage cosmetic runtime, catalogs, custom weapon skins, and presets."});N(l,(e:AddTab({Label="Presets",Icon=P.Presets,Description="Create, load, automate, and delete whole cosmetic loadouts."}):Grid({Columns=2})));W(l,e:AddTab({Label="Overview",Icon=P.Overview,Description="Enable cosmetic features, unlock cosmetics, reroll, and share your active look."}):Grid({Columns=2}),(I(l,{Skins=e:AddTab({Label="Skins",Icon=P.Skins,Description="Browse and apply weapon skin variants."}),Wraps=e:AddTab({Label="Wraps",Icon=P.Wraps,Description="Browse weapon wraps and control inverted patterns."}),Charms=e:AddTab({Label="Charms",Icon=P.Charms,Description="Browse weapon charms and optionally override rank charms."}),Finishers=e:AddTab({Label="Finishers",Icon=P.Finishers,Description="Browse and apply weapon finishers."})})));local custom=e:AddTab({Label="Custom Creator",Description="Create local weapon skins, effects, and weapon animation overrides."});tbl17.ic()(l,custom:Grid({Columns=2}));end;end
+local function fn35() tbl17 .aE(); tbl17 .hN();local I,W,N,P= tbl17 .il(), tbl17 .im(), tbl17 .io(),{Overview="rbxassetid://89644754139307",Skins="rbxassetid://97652569554326",Wraps="rbxassetid://76631821212930",Charms="rbxassetid://125353572203968",Finishers="rbxassetid://82039875682356",Presets="rbxassetid://119633739754015"};return function(l,a)local e=a:AddTab({Label="Cosmetics",Icon="rbxassetid://128162112866809",Description="Manage cosmetic runtime, catalogs, custom weapon skins, and presets."});N(l,(e:AddTab({Label="Presets",Icon=P.Presets,Description="Create, load, automate, and delete whole cosmetic loadouts."}):Grid({Columns=2})));W(l,e:AddTab({Label="Overview",Icon=P.Overview,Description="Enable cosmetic features, unlock cosmetics, reroll, and share your active look."}):Grid({Columns=2}),(I(l,{Skins=e:AddTab({Label="Skins",Icon=P.Skins,Description="Browse and apply weapon skin variants."}),Wraps=e:AddTab({Label="Wraps",Icon=P.Wraps,Description="Browse weapon wraps and control inverted patterns."}),Charms=e:AddTab({Label="Charms",Icon=P.Charms,Description="Browse weapon charms and optionally override rank charms."}),Finishers=e:AddTab({Label="Finishers",Icon=P.Finishers,Description="Browse and apply weapon finishers."})})));end;end
 
 tbl17.ip = function()
 local ip = tbl17.cache.ip
@@ -67130,6 +67138,9 @@ end)
 -- All controls are built with Kicia's own tab/section API; no floating ScreenGui.
 do
     local ENV = (getgenv and getgenv()) or _G
+    local CREATOR_VERSION = "2.2.0"
+    print("[Kicia Custom Skins] Version " .. CREATOR_VERSION .. " loaded")
+    print("[Kicia Custom Skins] Integration target: Cosmetics > Skins > Apply To > selected weapon > Skin Catalog")
     local HttpService = game:GetService("HttpService")
     local RunService = game:GetService("RunService")
     local STORE_KEY = "KiciaCustomWeaponSkins"
@@ -67315,12 +67326,18 @@ do
     end) end
 
     -- Kicia menu-native controls. Called by the Cosmetics tab composer below.
-    tbl17.ic = function()
-        return function(owner, tab)
-            local left = tab:AddSection({Title="Custom Skin", Side="left"})
-            local right = tab:AddSection({Title="Custom Effects & Animations", Side="right"})
-            local name = left:AddTextBox({Label="Skin Name"})
-            local weapon = left:AddTextBox({Label="Weapon Filter", Placeholder="AR / Sniper / Handgun; blank = all"})
+    tbl17.customWeaponCreatorUI = function()
+        return function(owner, tab, existingRight)
+            -- When called from the native Skins page, build directly inside its Skin Catalog section.
+            -- The fallback sections are retained for compatibility with older menu layouts.
+            local left = tab
+            local right = existingRight or tab:AddSection({Title="Custom Effects & Animations", Side="right"})
+            local name = left:AddTextBox({Label="Custom Skin Name"})
+            local gunOptions = {"All Weapons"}
+            local nativeWeapons = tbl17.aT()
+            for _, gunName in ipairs(nativeWeapons) do table.insert(gunOptions, gunName) end
+            print("[Kicia Custom Skins] Gun picker initialized with " .. tostring(#nativeWeapons) .. " Rivals weapon entries")
+            local weapon = left:AddDropdown({Label="Gun / Weapon", Options=gunOptions, Default="All Weapons", Search=true})
             local image = left:AddTextBox({Label="Texture / Image Asset ID"})
             local color = left:AddTextBox({Label="Skin Color (HEX)", Default="FFFFFF"})
             local rarity = left:AddDropdown({Label="Rarity", Options={"Custom","Common","Uncommon","Rare","Epic","Legendary","Mythical","Contraband"}})
@@ -67343,7 +67360,7 @@ do
             local function form()
                 return {
                     Name=tostring(name.Value or ""):gsub("^%s+",""):gsub("%s+$",""),
-                    Weapon=tostring(weapon.Value or ""), Image=cleanId(image.Value), Color=tostring(color.Value or "FFFFFF"),
+                    Weapon=(weapon.Value == "All Weapons" and "" or tostring(weapon.Value or "")), Image=cleanId(image.Value), Color=tostring(color.Value or "FFFFFF"),
                     Rarity=rarity.Value or "Custom", Slot=slot.Value or "Skin",
                     GlowEnabled=glow.Value == true, GlowColor=tostring(glowColor.Value or "B58CFF"),
                     ParticlesEnabled=particles.Value == true, ParticleColor=tostring(particleColor.Value or "B58CFF"),
@@ -67353,10 +67370,13 @@ do
             end
             local function refresh()
                 if saved and saved.SetItems then pcall(function() saved:SetItems(service.List(), true) end) end
+                print("[Kicia Custom Skins] Refresh requested from creator; saved skins: " .. tostring(#service.List()))
                 if type(ENV.KiciaCustomSkinRefresh) == "function" then pcall(ENV.KiciaCustomSkinRefresh) end
             end
             left:AddButton({Label="Create / Update Custom Skin", OnClick=function()
-                local data = form(); local ok, message = service.Save(data); setStatus(message); refresh()
+                local data = form(); local ok, message = service.Save(data); setStatus(message)
+                if ok then print("[Kicia Custom Skins] SAVED | Skin: " .. tostring(data.Name) .. " | Gun: " .. (data.Weapon ~= "" and data.Weapon or "All Weapons")) end
+                refresh()
             end})
             left:AddButton({Label="Apply Selected Custom Skin", OnClick=function()
                 local current = tostring(name.Value or saved.Value or "")
